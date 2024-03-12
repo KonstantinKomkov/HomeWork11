@@ -6,4 +6,4 @@ main.o: main.c temp_api.h
 temp_api.o: temp_api.c
 	gcc -c -o temp_api.o temp_api.c
 clean:
-	rm *.o prog.exe
+	del *.o prog.exe

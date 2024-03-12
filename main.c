@@ -1,22 +1,66 @@
 #include "temp_api.h"
 
-int main ()
+int main(int argc, char *argv[])
 {
-    struct temperature_data data[100];
-    int n = 6;
-    data[0].year = 2013; data[0].month = 11; data[0].day = 5; data[0].hour = 12; data[0].minute = 48; data[0].t = -1;
-    data[1].year = 2017; data[1].month = 9; data[1].day = 2; data[1].hour = 13; data[1].minute = 1; data[1].t = 7;
-    data[2].year = 2013; data[2].month = 12; data[2].day = 10; data[2].hour = 14; data[2].minute = 2; data[2].t = -7;
-    data[3].year = 2018; data[3].month = 11; data[3].day = 15; data[3].hour = 21; data[3].minute = 3; data[3].t = 3;
-    data[4].year = 2019; data[4].month = 1; data[4].day = 28; data[4].hour = 6; data[4].minute = 4; data[4].t = -17;
-    data[5].year = 2013; data[5].month = 8; data[5].day = 11; data[5].hour = 12; data[5].minute = 31; data[5].t = 21;
-    printf("Average 11 month Temp = %.3f\n", average_monthly_temperature(data, 2013, 11, n));
-    printf("Min 11 month Temp = %d\n", min_monthly_temperature(data, 2013, 11, n));
-    printf("Max 11 month Temp = %d\n", max_monthly_temperature(data, 2013, 11, n));
-    printf("Average 2013 year Temp = %.3f\n", average_year_temperature(data, 2013, n));
-    printf("Min 2013 year Temp = %d\n", min_year_temperature(data, 2013, n));
-    printf("Max 2013 year Temp = %d\n", max_year_temperature(data, 2013, n));
-    sort_by_temperature(data, n);
-    write_file(data, "Temp_Data.txt", n);
+    struct temperature_data* data = malloc(NUMBER_OF_LINE * sizeof(struct temperature_data));
+    if (!data)
+    {
+        puts("Data reading error, the file is too large.");
+        return -1;
+    }
+    int rez = 0, err = 0, value = 0;
+    char* filename;
+    while ((rez = getopt(argc, argv, "hf:m:r:as:")) != -1)
+    {
+        if (rez == 'h') // ключ h - выводим набор ключей приложения
+        {
+            print_information();
+        }
+        if (rez == 'f') // ключ f - считываем файл
+        {
+            err = read_file(data, optarg);
+            filename = optarg;
+            value = !value; 
+        }
+        if (rez == 'm') // ключ m - выводим статистику за месяц
+        {
+            if (err != -1)
+            {
+                print_table(data, NUMBER_OF_LINE, atoi(optarg));
+            }
+            value = 0;
+        }
+        if (rez == 'r' && err != -1) // ключ r - удаляем выбранную строку и перезаписываем файл
+        {
+            remove_lines(data, filename, atoi(optarg) - 1, err);
+            value = 0;
+        }
+        if (rez == 'a' && err != -1) // ключ a - добавляем строку и перезаписываем файл
+        {
+            add_lines(data, filename, err);
+            value = 0;
+        }
+        if (rez == 's' && err != -1) // ключ s - сортируем структуру и перезаписываем отсортированный файл
+        {
+            if(atoi(optarg) == 1) // 1 - сортируем структуру по температуре
+            {
+                sort_by_temperature(data, filename, err);
+            }
+            if(atoi(optarg) == 2) // 2 - сортируем структуру по дате
+            {
+                sort_by_date(data, filename, err);
+            }
+            value = 0;
+        }
+    }
+    if (value == 1 && err != -1) // если ввели только название файла то выводим статистику по всему файлу
+    {
+        print_table(data, NUMBER_OF_LINE, 0);
+    }
+    if(argc == 1) // если ничего не ввели, то выводим набор ключей приложения
+    {
+        print_information();
+    }
+    free(data);
     return 0;
 }
